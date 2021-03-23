@@ -76,12 +76,12 @@ static ARG_INLINE arg_return arg_parse_call_handler (int * argc, char *** argv, 
 static arg_return arg_parse_long (int * argc, char *** argv, arg_list list, size_t len) {
 	size_t i;
 	for (i = 0; i < len; ++i) {
-		if (ARG_STREQ(list[i].long_arg, **argv)) {
-			
-			arg_parse_call_handler (argc, argv, &list[i]);
+		if (ARG_STREQ(list[i].long_arg, &(**argv))) {
+
+			return arg_parse_call_handler (argc, argv, &list[i]);
 		}
 	}
-	return ARG_SUCCESS;	
+	return ARG_NMATCH;
 }
 
 /* Sub to parse short arguments 
@@ -154,23 +154,24 @@ char ** arg_parse (int argc, char ** argv, arg_list list, arg_return * code) {
 	arg_return ret_code = 0;
 	while (--argc) {
 		if (**argv == '-') {
-			if (*(++*argv) == '-' && **argv) { /* If the "--" is passed we have to stop accepting the arguments */ 
-				if ((ret_code = arg_parse_long (&argc, &argv, list, list_len)) != 0) {
-					*code = ret_code;
-					return argv;
-				}
-			}
-
 			if (*(*argv) == 0x0) {
 				*code = ARG_UNEXP;
 				return argv;
 			}
+			if (*(++*argv) == '-' && **argv) { /* If the "--" is passed we have to stop accepting the arguments */ 
+				++(*argv);
+				if ((ret_code = arg_parse_long (&argc, &argv, list, list_len)) != 0) {
+					*code = ret_code;
+					return argv;
+				}
+
+				continue;
+			}
+
 			if ((ret_code = arg_parse_short_a (&argc, &argv, list, list_len)) != 0) {
 				*code = ret_code;
 				return argv;
-			}
-			if (argc != 1)
-				++argv;
+			} else continue;
 
 			/* Not a key */
 			arg_parse_non (&argc, &argv, list, list_len);

@@ -32,7 +32,6 @@
 /* A simple implementation of some important "string.h" functions */
 #ifdef ARG_STANDALONE
 #	define ARG_ASSERT(x)
-#	define ARG_STRCMP(a, b) arg_strcmp(a, b)
 #	define ARG_STRLEN(str) arg_strlen(str)
 #	define ARG_STRCPY(dest, src) arg_strcpy(dest, src)
 #	define ARG_MEMCPY(dest, src, n) arg_memcpy(dest, src, n)
@@ -59,28 +58,11 @@ static void * arg_memcpy (void * dest, void * src, size_t n) {
 	return dest;
 }
 
-/* A slightly altered strcmp(), will return 0 even if the strings
- * don't match after the first one ended (i.e: abc = abcde, but
- * abc != abdc)
- *   IN char * f: first string
- *   IN char * f: second string
- *
- *   RETURN int:
- *     non-zero, if the strings don't match */
-static int arg_strcmp (char * f, char * s) {
-	while (*f && *s) {
-		if (!(*f == *s))
-			break;
-		++f; ++s;
-	}
-	return *(unsigned char *)f - *(unsigned char *)s;
-}
 
 #else
 #	include <string.h>
 #	include <assert.h>
 #	define ARG_ASSERT(x) assert(x)
-#	define ARG_STRCMP(a, b) strcmp(a, b)
 #	define ARG_STRLEN(str) strlen(str)
 #	define ARG_STRCPY(dest, src) strcpy(dest, src)
 #	define ARG_MEMCPY(dest, src, n) memcpy(dest, src, n)
@@ -111,7 +93,30 @@ static int arg_strcmp (char * f, char * s) {
 #	define ARG_SUCCESS 1
 #endif
 
-#define ARG_STREQ(a, b) (ARG_STRCMP(a, b) == 0)
+#define ARG_STREQ(a, b) (arg_strcmp(a, b) == 0)
+
+/* A slightly altered strcmp(), will return 0 even if the strings
+ * don't match after the first one ended (i.e: abc = abcde, but
+ * abc != abdc)
+ *   IN char * f: first string
+ *   IN char * f: second string
+ *
+ *   RETURN int:
+ *     non-zero, if the strings don't match */
+static int arg_strcmp (char * f, char ** s) {
+	char * rest_ptr = *s;
+	while (*f && **s) {
+		if (!(*f == **s)) {
+			break;	
+		}
+		++f; ++(*s);
+	}
+	int diff;
+	if ((diff = *(unsigned char *)f - *(unsigned char *)*s) != 0)
+		*s = rest_ptr;
+
+	return diff;
+}
 
 typedef int arg_callback ();
 typedef int p_arg_handler (void * data_ptr, size_t blksize, void * retval);

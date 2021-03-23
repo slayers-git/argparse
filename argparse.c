@@ -17,21 +17,6 @@
 
 #include "argparse.h"
 
-/* The author is very lazy and, apparentely, also has very doubtful
- * knowledge of C, so, to avoid using all these fancy things like
- * __thread, he came up with the stupidest idea ever: "why don't I
- * pass the state of the parser to every single function?" */
-
-/* Sub to parse long arguments 
- *   IN size_t * argc: -
- *   IN char *** argv: pointer to the array
- *   IN arg_list list: the list to parse from
- *   
- *   RETURN: Parse code */
-static arg_return arg_parse_long (int * argc, char *** argv, arg_list list, size_t len) {
-	return ARG_SUCCESS;	
-}
-
 /* Sub to parse the value of the argument
  * IN int * argc: - 
  * IN char *** argv: array pointer
@@ -42,7 +27,7 @@ static arg_return arg_parse_value (int * argc, char *** argv, void ** data, size
 		if (*argc == 1)
 			return ARG_NVALUE;
 		else {
-			--argc;
+			--(*argc);
 			++(*argv);
 		}
 	}
@@ -56,6 +41,49 @@ static arg_return arg_parse_value (int * argc, char *** argv, void ** data, size
 	return ARG_SUCCESS;
 }
 
+static ARG_INLINE arg_return arg_parse_call_handler (int * argc, char *** argv, struct arg_argument * ptr) {
+	void * data = NULL;
+	size_t size = 0;
+
+	/* TODO: Add a freaking check for non-value arguments */
+	if (ptr->handler) {
+		arg_return ret_code;
+		++(**argv);
+		ret_code = arg_parse_value(argc, argv, &data, &size);
+		if (ret_code == ARG_NVALUE) {
+			return ret_code;
+		}
+		if ((ret_code = ptr->handler(data, size, ptr->retval)) != 0)
+			return ret_code;
+	} else {
+		++(**argv);
+		*(char *)ptr->retval = 1;
+	}
+	return ARG_SUCCESS;
+}
+
+/* The author is very lazy and, apparentely, also has very doubtful
+ * knowledge of C, so, to avoid using all these fancy things like
+ * __thread, he came up with the stupidest idea ever: "why don't I
+ * pass the state of the parser to every single function?" */
+
+/* Sub to parse long arguments 
+ *   IN size_t * argc: -
+ *   IN char *** argv: pointer to the array
+ *   IN arg_list list: the list to parse from
+ *   
+ *   RETURN: Parse code */
+static arg_return arg_parse_long (int * argc, char *** argv, arg_list list, size_t len) {
+	size_t i;
+	for (i = 0; i < len; ++i) {
+		if (ARG_STREQ(list[i].long_arg, **argv)) {
+			
+			arg_parse_call_handler (argc, argv, &list[i]);
+		}
+	}
+	return ARG_SUCCESS;	
+}
+
 /* Sub to parse short arguments 
  *   IN size_t * argc: -
  *   IN char *** argv: pointer to the array
@@ -65,27 +93,23 @@ static arg_return arg_parse_value (int * argc, char *** argv, void ** data, size
 static arg_return arg_parse_short (int * argc, char *** argv, arg_list list, size_t len) {
 	size_t i;
 	for (i = 0; i < len; ++i) {
-		if (!(***argv)) {
-			return ARG_SUCCESS;
-		}
 		if (list[i].short_arg == ***argv) {
-			void * data = NULL;
-			size_t size = 0;
-
-			/* TODO: Add a freaking check for non-value arguments */
-			if (list[i].handler) {
-				arg_return ret_code;
-				++(**argv);
-				ret_code = arg_parse_value(argc, argv, &data, &size);
-				if (ret_code == ARG_NVALUE) {
-					return ret_code;
-				}
-				if ((ret_code = list[i].handler(data, size, list[i].retval)) != 0)
-					return ret_code;
-			}
+			return arg_parse_call_handler (argc, argv, &list[i]);
 		}
 	}
 	return ARG_NMATCH;	
+}
+
+static arg_return arg_parse_short_a (int * argc, char *** argv, arg_list list, size_t len) {
+	arg_return code;
+	while (***argv) {
+		if (***argv == '-') return ARG_UNEXP;
+		if ((code = arg_parse_short (argc, argv, list, len)) != ARG_SUCCESS) {
+			return code;
+		}
+	}
+
+	return ARG_SUCCESS;
 }
 
 /* Sub to parse non-arguments 
@@ -137,10 +161,16 @@ char ** arg_parse (int argc, char ** argv, arg_list list, arg_return * code) {
 				}
 			}
 
-			if ((ret_code = arg_parse_short (&argc, &argv, list, list_len)) != 0) {
+			if (*(*argv) == 0x0) {
+				*code = ARG_UNEXP;
+				return argv;
+			}
+			if ((ret_code = arg_parse_short_a (&argc, &argv, list, list_len)) != 0) {
 				*code = ret_code;
 				return argv;
 			}
+			if (argc != 1)
+				++argv;
 
 			/* Not a key */
 			arg_parse_non (&argc, &argv, list, list_len);

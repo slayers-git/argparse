@@ -58,6 +58,8 @@ static ARG_INLINE arg_return arg_parse_call_handler (int * argc, char *** argv, 
 	} else {
 		++(**argv);
 		*(char *)ptr->retval = 1;
+		if (*argc > 1 && (***argv + 1) == 0x0)
+			++(*argv);
 	}
 	return ARG_SUCCESS;
 }
@@ -91,34 +93,24 @@ static arg_return arg_parse_long (int * argc, char *** argv, arg_list list, size
  *   
  *   RETURN: Parse code */
 static arg_return arg_parse_short (int * argc, char *** argv, arg_list list, size_t len) {
-	size_t i;
-	for (i = 0; i < len; ++i) {
-		if (list[i].short_arg == ***argv) {
-			return arg_parse_call_handler (argc, argv, &list[i]);
-		}
-	}
-	return ARG_NMATCH;	
-}
 
-static arg_return arg_parse_short_a (int * argc, char *** argv, arg_list list, size_t len) {
 	arg_return code;
+	size_t i;
+	char its_a_match = 0;
+
 	while (***argv) {
-		if (***argv == '-') return ARG_UNEXP;
-		if ((code = arg_parse_short (argc, argv, list, len)) != ARG_SUCCESS) {
-			return code;
+		its_a_match = 0;
+		if (!***argv) return ARG_SUCCESS;
+		for (i = 0; i < len; ++i) {
+			if (list[i].short_arg == ***argv) {
+				if ((code = arg_parse_call_handler (argc, argv, &list[i])) != ARG_SUCCESS) 
+					return code;
+				its_a_match = 1;
+				break;
+			}
 		}
+		if (!its_a_match) return ARG_NMATCH;
 	}
-
-	return ARG_SUCCESS;
-}
-
-/* Sub to parse non-arguments 
- *   IN size_t * argc: -
- *   IN char *** argv: pointer to the array
- *   IN arg_list list: the list to parse from
- *   
- *   RETURN: Parse code */
-static arg_return arg_parse_non (int * argc, char *** argv, arg_list list, size_t len) {
 	return ARG_SUCCESS;
 }
 
@@ -135,7 +127,7 @@ static ARG_INLINE size_t arg_list_len (const arg_list list) {
 }
 
 /* arg_parse implementation */
-char ** arg_parse (int argc, char ** argv, arg_list list, arg_return * code) {
+char ** arg_parse (int argc, char ** argv, arg_list list, char ** not_keys, size_t * not_keys_len, arg_return * code) {
 	/* The idea of spliting these lines, is to keep track
 	 * of the exact cause */
 	ARG_ASSERT(argc > 1);
@@ -144,6 +136,7 @@ char ** arg_parse (int argc, char ** argv, arg_list list, arg_return * code) {
 
 	size_t list_len = arg_list_len (list);
 	assert (list_len > 0);
+	*not_keys_len = 0;
 
 	if (argc == 1) {
 		*code = ARG_ZERO;
@@ -152,6 +145,7 @@ char ** arg_parse (int argc, char ** argv, arg_list list, arg_return * code) {
 
 	++argv;
 	arg_return ret_code = 0;
+
 	while (--argc) {
 		if (**argv == '-') {
 			if (*(*argv) == 0x0) {
@@ -164,17 +158,28 @@ char ** arg_parse (int argc, char ** argv, arg_list list, arg_return * code) {
 					*code = ret_code;
 					return argv;
 				}
-
+				++argv;
 				continue;
 			}
 
-			if ((ret_code = arg_parse_short_a (&argc, &argv, list, list_len)) != 0) {
+			if ((ret_code = arg_parse_short (&argc, &argv, list, list_len)) != 0) {
 				*code = ret_code;
 				return argv;
-			} else continue;
-
-			/* Not a key */
-			arg_parse_non (&argc, &argv, list, list_len);
+			} else {
+				++argv;
+				continue;
+			}
+		}
+		/* Not a key */
+		if (not_keys) {
+			*not_keys = *argv;
+			++(*not_keys_len);
+			++not_keys;
+			++argv;
+			continue;
+		} else {
+			*code = ARG_UNEXP;
+			return argv;
 		}
 	}
 	*code = ARG_SUCCESS;

@@ -183,6 +183,8 @@ typedef struct arg_argument arg_list[];
  *   IN int argc: argument count 
  *   IN char ** argv: arguments array 
  *   IN arg_list list: list, defining the accepted arguments 
+ *   IN char ** not_keys: a buffer for random values
+ *   IN size_t * not_keys_size: size of the not_keys buffer
  *   OUT arg_return * return_code: a return code of the status
  *     ARG_SUCCESS [0] if the parsing is done without failures
  *
@@ -196,6 +198,6 @@ typedef struct arg_argument arg_list[];
  *   NOTE:
  *     this function changes the addresses of the pointers, to save them
  *     as they were, consider writing them into another set of variables.*/
-char ** arg_parse (int argc, char ** argv, arg_list list, arg_return * return_code);
+char ** arg_parse (int argc, char ** argv, arg_list list, char ** not_keys, size_t * not_keys_size, arg_return * return_code);
 
 #endif

@@ -19,15 +19,14 @@
  * 	check whether or not the argument belongs in line
  * 	check if its long or short type
  * 	parse accordingly:
- * 		short, meaning that the data can be inserted after the argument key or after a space 
- * 		long, meaning that the data can be inserted after a space or after a '=' char
- * 	The ordering plays some role */
+ * 		short, meaning that the data can be inserted after a whitespace
+ * 		long, meaning that the data can be inserted after a space char 
+ *
+ * 	flags can be merged together, if they are flags (i.e: tar -xzvf ...) */
 
 
 #ifndef __SL_ARGPARSE_H__
 #define __SL_ARGPARSE_H__
-
-#include <malloc.h>
 
 /* A simple implementation of some important "string.h" functions */
 #ifdef ARG_STANDALONE
@@ -58,7 +57,6 @@ static void * arg_memcpy (void * dest, void * src, size_t n) {
 	return dest;
 }
 
-
 #else
 #	include <string.h>
 #	include <assert.h>
@@ -84,9 +82,8 @@ static void * arg_memcpy (void * dest, void * src, size_t n) {
 #define ARG_NMATCH -6
 #define ARG_NVALUE -7
 
-#define ARG_ORDER 0x0001
-
-
+/* If you want to make this work, you have to recompile the library
+ * with -DARG_TRUE_EQ_ONE (makes successful returns equal to 1) */
 #ifndef ARG_TRUE_EQ_ONE
 #	define ARG_SUCCESS 0
 #else
@@ -95,11 +92,11 @@ static void * arg_memcpy (void * dest, void * src, size_t n) {
 
 #define ARG_STREQ(a, b) (arg_strcmp(a, b) == 0)
 
-/* A slightly altered strcmp(), will return 0 even if the strings
- * don't match after the first one ended (i.e: abc = abcde, but
- * abc != abdc)
+/* A slightly altered strcmp(), will move the pointer of the second
+ * string, but will restore it to the former state, if strings don't
+ * match
  *   IN char * f: first string
- *   IN char * f: second string
+ *   IN char ** f: second string
  *
  *   RETURN int:
  *     non-zero, if the strings don't match */
@@ -118,7 +115,6 @@ static int arg_strcmp (char * f, char ** s) {
 	return diff;
 }
 
-typedef int arg_callback ();
 typedef int p_arg_handler (void * data_ptr, size_t blksize, void * retval);
 
 /* The handler is the parser for the value of the argument
@@ -129,10 +125,6 @@ typedef p_arg_handler * arg_handler;
 
 /* A handler for a generic string. */
 static p_arg_handler arg_string_handler;
-/* A handler for a raw data, meaning that the raw byte
- * data will be stored inside a pointer. Acts almost the
- * same way as the arg_string_handler does. */
-static p_arg_handler arg_raw_handler;
 
 static int arg_string_handler (void * data_ptr, size_t blksize, void * retval) {
 	if (blksize == 0) {
@@ -143,19 +135,10 @@ static int arg_string_handler (void * data_ptr, size_t blksize, void * retval) {
 	return 0;
 }
 
-static int arg_raw_handler (void * data_ptr, size_t blksize, void * retval) {
-	if (blksize == 0) {
-		retval = NULL;
-		return 0;
-	}
-	ARG_MEMCPY(retval, data_ptr, blksize);
-	return 0;
-}
-
 /* Flags define the behaviour of the arguments parser 
  * As example, ARG_FLAG_HALT will cause parser to be stopped when 
  * the specified argument is met. */
-typedef unsigned char arg_flags;
+typedef unsigned char arg_flags; /* NOT IMPLEMENTED YET */
 
 /* Type for the return codes */
 typedef signed char arg_return;
@@ -197,7 +180,7 @@ typedef struct arg_argument arg_list[];
  *
  *   NOTE:
  *     this function changes the addresses of the pointers, to save them
- *     as they were, consider writing them into another set of variables.*/
+ *     as they were, consider writing them into another set of variables. */
 char ** arg_parse (int argc, char ** argv, arg_list list, char ** not_keys, size_t * not_keys_size, arg_return * return_code);
 
 #endif

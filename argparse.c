@@ -22,7 +22,7 @@
  * IN char *** argv: array pointer
  *
  * RETURN: return code */
-static arg_return arg_parse_value (int * argc, char *** argv, void ** data, size_t * size) {
+static ARG_INLINE arg_return arg_parse_value (int * argc, char *** argv, void ** data, size_t * size) {
 	if (!(***argv)) {
 		if (*argc == 1)
 			return ARG_NVALUE;
@@ -64,18 +64,13 @@ static ARG_INLINE arg_return arg_parse_call_handler (int * argc, char *** argv, 
 	return ARG_SUCCESS;
 }
 
-/* The author is very lazy and, apparentely, also has very doubtful
- * knowledge of C, so, to avoid using all these fancy things like
- * __thread, he came up with the stupidest idea ever: "why don't I
- * pass the state of the parser to every single function?" */
-
 /* Sub to parse long arguments 
  *   IN size_t * argc: -
  *   IN char *** argv: pointer to the array
  *   IN arg_list list: the list to parse from
  *   
  *   RETURN: Parse code */
-static arg_return arg_parse_long (int * argc, char *** argv, arg_list list, size_t len) {
+static ARG_INLINE arg_return arg_parse_long (int * argc, char *** argv, arg_list list, size_t len) {
 	size_t i;
 	for (i = 0; i < len; ++i) {
 		if (ARG_STREQ(list[i].long_arg, &(**argv))) {
@@ -92,7 +87,7 @@ static arg_return arg_parse_long (int * argc, char *** argv, arg_list list, size
  *   IN arg_list list: the list to parse from
  *   
  *   RETURN: Parse code */
-static arg_return arg_parse_short (int * argc, char *** argv, arg_list list, size_t len) {
+static ARG_INLINE arg_return arg_parse_short (int * argc, char *** argv, arg_list list, size_t len) {
 
 	arg_return code;
 	size_t i;
@@ -146,13 +141,21 @@ char ** arg_parse (int argc, char ** argv, arg_list list, char ** not_keys, size
 	++argv;
 	arg_return ret_code = 0;
 
+	char accept_args = 1;
+
 	while (--argc) {
-		if (**argv == '-') {
+		if (**argv == '-' && accept_args) {
 			if (*(*argv) == 0x0) {
 				*code = ARG_UNEXP;
 				return argv;
 			}
-			if (*(++*argv) == '-' && **argv) { /* If the "--" is passed we have to stop accepting the arguments */ 
+			if (*(++*argv) == '-') { /* If the "--" is passed we have to stop accepting the arguments */ 
+
+				if (**argv == '-' && !*(*argv + 1)) {
+					accept_args = 0;
+					++argv;
+					continue;
+				}
 				++(*argv);
 				if ((ret_code = arg_parse_long (&argc, &argv, list, list_len)) != 0) {
 					*code = ret_code;

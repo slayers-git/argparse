@@ -52,11 +52,14 @@ static ARG_INLINE arg_return arg_parse_call_handler (int * argc, char *** argv, 
 		if ((ret_code = ptr->handler(data, size, ptr->retval)) != 0)
 			return ret_code;
 	} else {
-		*(char *)ptr->retval = 1;
+		*(char *)ptr->retval = ptr->flags & ARG_FLAG_UNSET ? 0 : 1;
 		++(**argv);
 		if ((**argv + 1) == 0x0) {
 			++(*argv);
 		}
+	}
+	if (ptr->flags & ARG_FLAG_HALT) {
+		return ARG_HALT;
 	}
 	return ARG_SUCCESS;
 }
@@ -136,7 +139,8 @@ char ** arg_parse (int argc, char ** argv, arg_list list, char ** not_keys, size
 
 	size_t list_len = arg_list_len (list);
 	assert (list_len > 0);
-	*not_keys_len = 0;
+	if (not_keys_len) 
+		*not_keys_len = 0;
 
 	if (argc == 1) {
 		*code = ARG_ZERO;
@@ -177,7 +181,7 @@ char ** arg_parse (int argc, char ** argv, arg_list list, char ** not_keys, size
 			
 		}
 		/* Not a key */
-		if (not_keys) {
+		if (not_keys && not_keys_len) {
 			*not_keys = *argv;
 			++(*not_keys_len);
 			++not_keys;

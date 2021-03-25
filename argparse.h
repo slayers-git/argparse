@@ -77,7 +77,7 @@ static void * arg_memcpy (void * dest, void * src, size_t n) {
 #define ARG_ZERO   -1
 #define ARG_INVAL  -2
 #define ARG_NFOUND -3
-#define ARG_NOMEM  -4
+#define ARG_HALT   -4
 #define ARG_UNEXP  -5
 #define ARG_NMATCH -6
 #define ARG_NVALUE -7
@@ -143,10 +143,17 @@ static int arg_strcpy_handler (void * data_ptr, size_t blksize, void * retval) {
 	return 0;
 }
 
+/* This flag tells the parser to set the flag argument value to 0 instead of 1 */
+#define ARG_FLAG_UNSET    0x01
+/* This flag tells the parser that the value for this argument is optional */
+/* #define ARG_FLAG_OPTIONAL 0x04 */
+/* This flag tells the parser to stop when the argument is met and parsed */
+#define ARG_FLAG_HALT     0x08
+
 /* Flags define the behaviour of the arguments parser 
  * As example, ARG_FLAG_HALT will cause parser to be stopped when 
  * the specified argument is met. */
-typedef unsigned char arg_flags; /* NOT IMPLEMENTED YET */
+typedef unsigned char arg_flags;
 
 /* Type for the return codes */
 typedef signed char arg_return;

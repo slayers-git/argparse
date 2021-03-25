@@ -125,8 +125,16 @@ typedef p_arg_handler * arg_handler;
 
 /* A handler for a generic string. */
 static p_arg_handler arg_string_handler;
+/* A handler for a generic string, copies the data
+ * to the static buffer */
+static p_arg_handler arg_strcpy_handler;
 
 static int arg_string_handler (void * data_ptr, size_t blksize, void * retval) {
+	void ** _retval = (void **)retval;
+	*_retval = data_ptr;
+	return 0;
+}
+static int arg_strcpy_handler (void * data_ptr, size_t blksize, void * retval) {
 	if (blksize == 0) {
 		retval = NULL;
 		return 0;

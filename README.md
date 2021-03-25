@@ -13,45 +13,65 @@ static char is_verbose = 0;
 static char jump = 0;
 static char jump_last = 0;
 static char should_create = 0;
-static char project_name [5000];
+
+static char * project_name;
+
+static char * move_to = NULL;
+static char * not_moving = "not moving anywhere";
 
 int main (int argc, char ** argv) {
+	/* argparse does not check if a program had recieved any arguments */
 	if (argc == 1) {
 		return 0;
 	}
-	char buffer[5000] = { 0x0 };
+
+	/* An array, describing the options, that this program accepts */
 	arg_list list = {
-		{ 'v', "verbose", NULL, &is_verbose },
-		{ 'c', "create", NULL, &should_create },
-		{ 'j', "jump", NULL, &jump },
-		{ 'J', "jump-last", NULL, &jump_last },
-		{ 'm', "move", arg_string_handler, buffer },
+		/* s ,  long opt  ,      handler      ,  value buffer  */ 
+		{ 'v', "verbose"  , NULL              , &is_verbose    },
+		{ 'c', "create"   , NULL              , &should_create },
+		{ 'j', "jump"     , NULL              , &jump          },
+		{ 'J', "jump-last", NULL              , &jump_last     },
+		{ 'm', "move"     , arg_string_handler, &move_to       },
 		{ 0 }
+		/* NOTE */
+		/* 's' stands for "short option" here
+		 * "handler" is a function that accepts a parsed value
+		 * of the argument, modifying and writing it into the 
+		 * value buffer */
 	};
 
+	/* return code of the parser */
 	arg_return code;
+	/* in case of an error, this is going to point to the program's argument
+	 * that was the cause of it */
 	char ** ptr;
 
-	/* buffer for elements, that are not keys */
-	char * nk_buffer[3];
-	/* size of the written buffer */
+	/* buffer for the elements, that are not keys */
+	char * nk_buffer = NULL;
+	/* size of the nk_buffer */
 	size_t buf_size;
 
-	if ((ptr = arg_parse (argc, argv, list, nk_buffer, &buf_size, &code)) != NULL) {
+	/* parse the program's arguments */
+	if ((ptr = arg_parse (argc, argv, list, &nk_buffer, &buf_size, &code)) != NULL) {
 		printf ("An error occured here: %s", *ptr);
 		return code;
 	}
 
-	if (nk_buffer[0]) {
-		ARG_STRCPY(project_name, nk_buffer[0]);
-	}
+	/* if the user entered an argument, that does not belong to any key */
+	if (nk_buffer)
+		project_name = nk_buffer;
 
-	printf ("Name: %s\nCreate? %i\nVerbose? %i\nJump? %i\nJump-last? %i\nMove to: %s\n", (const char *)project_name, should_create, is_verbose, jump, jump_last, buffer);
+	if (move_to == NULL)
+		move_to = not_moving;
+
+	printf ("Name: %s\nCreate? %i\nVerbose? %i\nJump? %i\nJump-last? %i\nMove to: %s\n", (const char *)project_name, should_create, is_verbose, jump, jump_last, move_to);
 
 	return 0;
 }
+
 ```
 
 ## Installation
 
-To install argparse on a unix system just type `make && doas make install`
+To install argparse on a unix system just type `make && sudo make install`

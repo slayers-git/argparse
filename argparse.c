@@ -23,13 +23,11 @@
  *
  * RETURN: return code */
 static ARG_INLINE arg_return arg_parse_value (int * argc, char *** argv, void ** data, size_t * size) {
-	if (!(***argv)) {
-		if (*argc == 1)
-			return ARG_NVALUE;
-		else {
-			--(*argc);
-			++(*argv);
-		}
+	if (*argc <= 1)
+		return ARG_NVALUE;
+	else {
+		--(*argc);
+		++(*argv);
 	}
 	*size = ARG_STRLEN (**argv);
 	if (*size == 0) {
@@ -37,7 +35,6 @@ static ARG_INLINE arg_return arg_parse_value (int * argc, char *** argv, void **
 		return ARG_NVALUE;
 	}
 	*data = **argv;
-	**argv += *size;
 	return ARG_SUCCESS;
 }
 
@@ -48,7 +45,6 @@ static ARG_INLINE arg_return arg_parse_call_handler (int * argc, char *** argv, 
 	/* TODO: Add a freaking check for non-value arguments */
 	if (ptr->handler) {
 		arg_return ret_code;
-		++(**argv);
 		ret_code = arg_parse_value(argc, argv, &data, &size);
 		if (ret_code == ARG_NVALUE) {
 			return ret_code;
@@ -56,10 +52,11 @@ static ARG_INLINE arg_return arg_parse_call_handler (int * argc, char *** argv, 
 		if ((ret_code = ptr->handler(data, size, ptr->retval)) != 0)
 			return ret_code;
 	} else {
-		++(**argv);
 		*(char *)ptr->retval = 1;
-		if (*argc > 1 && (***argv + 1) == 0x0)
+		++(**argv);
+		if ((**argv + 1) == 0x0) {
 			++(*argv);
+		}
 	}
 	return ARG_SUCCESS;
 }
@@ -74,8 +71,11 @@ static ARG_INLINE arg_return arg_parse_long (int * argc, char *** argv, arg_list
 	size_t i;
 	for (i = 0; i < len; ++i) {
 		if (ARG_STREQ(list[i].long_arg, &(**argv))) {
-
-			return arg_parse_call_handler (argc, argv, &list[i]);
+			arg_return code;
+			if ((code = arg_parse_call_handler (argc, argv, &list[i])) != ARG_SUCCESS)
+				return code;
+			++(*argv); 
+			return ARG_SUCCESS;
 		}
 	}
 	return ARG_NMATCH;
@@ -100,12 +100,17 @@ static ARG_INLINE arg_return arg_parse_short (int * argc, char *** argv, arg_lis
 			if (list[i].short_arg == ***argv) {
 				if ((code = arg_parse_call_handler (argc, argv, &list[i])) != ARG_SUCCESS) 
 					return code;
+				if (list[i].handler) {
+					++(*argv);
+					return ARG_SUCCESS;
+				}
 				its_a_match = 1;
 				break;
 			}
 		}
 		if (!its_a_match) return ARG_NMATCH;
 	}
+	++(*argv);
 	return ARG_SUCCESS;
 }
 
@@ -143,17 +148,17 @@ char ** arg_parse (int argc, char ** argv, arg_list list, char ** not_keys, size
 
 	char accept_args = 1;
 
-	while (--argc) {
+	while ((--argc) > 0) {
 		if (**argv == '-' && accept_args) {
-			if (*(*argv) == 0x0) {
+			if ((**argv + 1) == 0x0) {
 				*code = ARG_UNEXP;
 				return argv;
 			}
 			if (*(++*argv) == '-') { /* If the "--" is passed we have to stop accepting the arguments */ 
-
 				if (**argv == '-' && !*(*argv + 1)) {
 					accept_args = 0;
 					++argv;
+					--argc;
 					continue;
 				}
 				++(*argv);
@@ -161,24 +166,24 @@ char ** arg_parse (int argc, char ** argv, arg_list list, char ** not_keys, size
 					*code = ret_code;
 					return argv;
 				}
-				++argv;
 				continue;
 			}
 
 			if ((ret_code = arg_parse_short (&argc, &argv, list, list_len)) != 0) {
 				*code = ret_code;
 				return argv;
-			} else {
-				++argv;
-				continue;
 			}
+			continue;
+			
 		}
 		/* Not a key */
 		if (not_keys) {
 			*not_keys = *argv;
 			++(*not_keys_len);
 			++not_keys;
-			++argv;
+			if (argc > 0) {
+				++argv; 
+			}
 			continue;
 		} else {
 			*code = ARG_UNEXP;

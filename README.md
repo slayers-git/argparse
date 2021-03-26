@@ -45,7 +45,7 @@ int main (int argc, char ** argv) {
 	arg_return code;
 	/* in case of an error, this is going to point to the program's argument
 	 * that was the cause of it */
-	char ** ptr;
+	char * ptr;
 
 	/* buffer for the elements, that are not keys */
 	char * nk_buffer = NULL;
@@ -53,8 +53,8 @@ int main (int argc, char ** argv) {
 	size_t buf_size;
 
 	/* parse the program's arguments */
-	if ((ptr = arg_parse (argc, argv, list, &nk_buffer, &buf_size, &code)) != NULL) {
-		printf ("An error occured here: %s", *ptr);
+	if ((ptr = arg_parse (&argc, &argv, list, &nk_buffer, &buf_size, &code)) != NULL) {
+		printf ("An error occured here: %s", ptr);
 		return code;
 	}
 

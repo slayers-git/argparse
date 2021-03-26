@@ -1,3 +1,20 @@
+/* argparse - fast argument parsing tool 
+ * Copyright (C) 2021 Sergey Lafin
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
+
 #include "argparse.h"
 
 #define ARG_LONG  0
@@ -9,6 +26,7 @@
 #	define ARG_STRLEN(str) arg_strlen(str)
 #	define ARG_STRCPY(dest, src) arg_strcpy(dest, src)
 #	define ARG_MEMCPY(dest, src, n) arg_memcpy(dest, src, n)
+#	define ARG_STRCMP(a, b) arg_strcmp(a, b)
 
 static size_t arg_strlen (char * str) {
 	size_t len = 0;
@@ -52,9 +70,10 @@ static int arg_strcmp (char * f, char * s) {
 #	define ARG_STRLEN(str) strlen(str)
 #	define ARG_STRCPY(dest, src) strcpy(dest, src)
 #	define ARG_MEMCPY(dest, src, n) memcpy(dest, src, n)
+#	define ARG_STRCMP(a, b) strcmp(a, b)
 #endif
 
-#define ARG_STREQ(a, b) (strcmp(a, b) == 0)
+#define ARG_STREQ(a, b) (ARG_STRCMP(a, b) == 0)
 
 #if __STDC_VERSION__ >= 199903L
 #	define ARG_INLINE inline
@@ -76,9 +95,9 @@ int arg_strcpy_handler (void * data_ptr, size_t blksize, void * retval) {
 	return 0;
 }
 struct arg_state {
-	size_t len;
+	size_t   len;
 	int   * argc;
-	int flags; /* NOT IMPLEMENTED YET */
+	int    flags; /* NOT IMPLEMENTED YET */
 
 	char ** argv;
 	struct arg_argument * list;
@@ -105,6 +124,16 @@ static ARG_INLINE void arg_parse_value (struct arg_state * state, void ** data, 
 }
 
 static ARG_INLINE arg_return arg_call_handler (struct arg_state * state) {
+	if (state->ptr->flags & ARG_FLAG_OPTIONAL) {
+		if (
+				(state->type == ARG_SHORT && *(*state->argv + 1) != 0x0) || 
+				*state->argc == 1 ||
+				**(state->argv + 1) == '-'
+		) {
+			++(*state->argv);
+			return ARG_SUCCESS;
+		}
+	}
 	/* An argument with a mandatory value */
 	if (state->ptr->handler) {
 		void * data;
@@ -112,11 +141,11 @@ static ARG_INLINE arg_return arg_call_handler (struct arg_state * state) {
 
 		arg_return code;
 
-		if (*state->argc > 1) {
-			++state->argv;
-			--(*state->argc);
-		} else
+		if (*state->argc <= 1 || (state->type == ARG_SHORT && *(*state->argv + 1) != 0x0)) {
 			return ARG_NVALUE;
+		} 
+		++state->argv;
+		--(*state->argc);
 		arg_parse_value (state, &data, &size);
 
 		if ((code = state->ptr->handler (data, size, state->ptr->retval)) != ARG_SUCCESS) {

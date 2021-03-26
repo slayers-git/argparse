@@ -60,7 +60,7 @@ p_arg_handler arg_strcpy_handler;
 /* This flag tells the parser to set the flag argument value to 0 instead of 1 */
 #define ARG_FLAG_UNSET    0x01
 /* This flag tells the parser that the value for this argument is optional */
-/* #define ARG_FLAG_OPTIONAL 0x04 */
+#define ARG_FLAG_OPTIONAL 0x04
 /* This flag tells the parser to stop when the argument is met and parsed */
 #define ARG_FLAG_HALT     0x08
 

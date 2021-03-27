@@ -81,12 +81,12 @@ static int arg_strcmp (char * f, char * s) {
 #	define ARG_INLINE 
 #endif
 
-int arg_string_handler (void * data_ptr, size_t blksize, void * retval) {
+arg_return arg_string_handler (void * data_ptr, size_t blksize, void * retval) {
 	void ** _retval = (void **)retval;
 	*_retval = data_ptr;
 	return 0;
 }
-int arg_strcpy_handler (void * data_ptr, size_t blksize, void * retval) {
+arg_return arg_strcpy_handler (void * data_ptr, size_t blksize, void * retval) {
 	if (blksize == 0) {
 		retval = NULL;
 		return 0;
@@ -94,16 +94,17 @@ int arg_strcpy_handler (void * data_ptr, size_t blksize, void * retval) {
 	ARG_STRCPY((char *)retval, (char *)data_ptr);
 	return 0;
 }
+
 struct arg_state {
 	size_t   len;
 	int   * argc;
-	int    flags; /* NOT IMPLEMENTED YET */
+	int    flags;
 
 	char ** argv;
 	struct arg_argument * list;
 	struct arg_argument * ptr;
 
-	char type; /* NOT IMPLEMENTED YET */
+	char type;
 };
 
 static ARG_INLINE size_t arg_list_len (arg_list list) {
@@ -141,11 +142,32 @@ static ARG_INLINE arg_return arg_call_handler (struct arg_state * state) {
 
 		arg_return code;
 
-		if (*state->argc <= 1 || (state->type == ARG_SHORT && *(*state->argv + 1) != 0x0)) {
-			return ARG_NVALUE;
-		} 
-		++state->argv;
-		--(*state->argc);
+		switch (state->type) {
+		case ARG_SHORT:
+			if (state->flags & ARG_PARSE_MERGED) {
+				if (*(*state->argv + 1) == 0x0) {
+					if (*state->argc == 1)
+						return ARG_NVALUE;
+					++state->argv;
+					--(*state->argc);
+					break;
+				}
+				++(*state->argv);
+				break;
+			}
+			if (*(*state->argv + 1) != 0x0 || *state->argc == 1)
+				return ARG_NVALUE;
+			++state->argv;
+			--(*state->argc);
+			break;
+		case ARG_LONG:
+			if (*state->argc == 1) {
+				return ARG_NVALUE;
+			}
+			++state->argv;
+			--(*state->argc);
+			break;
+		}
 		arg_parse_value (state, &data, &size);
 
 		if ((code = state->ptr->handler (data, size, state->ptr->retval)) != ARG_SUCCESS) {
@@ -154,7 +176,8 @@ static ARG_INLINE arg_return arg_call_handler (struct arg_state * state) {
 		return ARG_SUCCESS;
 	}
 	/* A flag */
-	*(char *)state->ptr->retval = state->ptr->flags & ARG_FLAG_UNSET ? 0 : 1;
+	if (state->ptr->retval != NULL)
+		*(char *)state->ptr->retval = state->ptr->flags & ARG_FLAG_UNSET ? 0 : 1;
 	++(*state->argv);
 
 	if (state->ptr->flags & ARG_FLAG_HALT)
@@ -204,7 +227,7 @@ static ARG_INLINE arg_return arg_parse_long (struct arg_state * state) {
 	return ARG_NMATCH;
 }
 
-char * arg_parse (int * argc, char *** argv, arg_list list, char ** nk, size_t * nk_size, arg_return * code) {
+char * arg_parse (int * argc, char *** argv, arg_list list, char ** nk, size_t * nk_size, arg_flags flags, arg_return * code) {
 	ARG_ASSERT (*argc > 1);
 	ARG_ASSERT (argv != NULL);
 	ARG_ASSERT (list != NULL);
@@ -218,7 +241,7 @@ char * arg_parse (int * argc, char *** argv, arg_list list, char ** nk, size_t *
 	struct arg_state state;
 	state.argc   =    argc;
 	state.argv   =   *argv;
-	state.flags  =       0;
+	state.flags  =   flags;
 	state.list   =    list;
 	state.ptr    =    NULL;
 	state.len    =     len;

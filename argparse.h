@@ -22,7 +22,9 @@
  * 		short, meaning that the data can be inserted after a whitespace
  * 		long, meaning that the data can be inserted after a space char 
  *
- * 	flags can be merged together, if they are flags (i.e: tar -xzvf ...) */
+ * 	keys can be merged together, if they are flags (i.e: tar -xzvf ...) or,
+ * 	if ARG_PARSE_MERGED is passed to the arg_parse function, merged key-value
+ * 	arguments can be used (i.e objdump -Mintel ...) */
 
 
 #ifndef __SL_ARGPARSE_H__
@@ -42,7 +44,10 @@
 #define ARG_NMATCH -6
 #define ARG_NVALUE -7
 
-typedef int p_arg_handler (void * data_ptr, size_t blksize, void * retval);
+/* Type for the return codes */
+typedef signed char arg_return;
+
+typedef arg_return p_arg_handler (void * data_ptr, size_t blksize, void * retval);
 
 /* The handler is the parser for the value of the argument
  * if NULL is passed instead of a valid handler function,
@@ -56,7 +61,6 @@ p_arg_handler arg_string_handler;
  * to the static buffer */
 p_arg_handler arg_strcpy_handler;
 
-
 /* This flag tells the parser to set the flag argument value to 0 instead of 1 */
 #define ARG_FLAG_UNSET    0x01
 /* This flag tells the parser that the value for this argument is optional */
@@ -64,13 +68,16 @@ p_arg_handler arg_strcpy_handler;
 /* This flag tells the parser to stop when the argument is met and parsed */
 #define ARG_FLAG_HALT     0x08
 
+/* Global parser flags */
+/* Defaults */
+#define ARG_PARSE_DEFAULT   0x0
+/* Allow merged arguments (i.e: objdump -Mintel ...) */
+#define ARG_PARSE_MERGED   0x01
+
 /* Flags define the behaviour of the arguments parser 
  * As example, ARG_FLAG_HALT will cause parser to be stopped when 
  * the specified argument is met. */
 typedef unsigned char arg_flags;
-
-/* Type for the return codes */
-typedef signed char arg_return;
 
 /* struct arg_argument
  *   Contains a basic description of the argument list
@@ -92,13 +99,21 @@ struct arg_argument {
 typedef struct arg_argument arg_list[];
 
 /* char * arg_parse:
- *   IN int * argc: argument count 
- *   IN char *** argv: arguments array 
- *   IN arg_list list: list, defining the accepted arguments 
- *   IN char ** not_keys: a buffer for random values
- *   IN size_t * not_keys_size: size of the not_keys buffer
- *   OUT arg_return * return_code: a return code of the status
- *     ARG_SUCCESS [0] if the parsing is done without failures
+ *   @param argc
+ *     argument count 
+ *   @param argv
+ *     arguments array 
+ *   @param list
+ *     list, defining the accepted arguments 
+ *   @param not_keys
+ *     a buffer for random values
+ *   @param not_keys_size
+ *     size of the not_keys buffer
+ *   @param flags
+ *     flags, defining the behaviour of the parser
+ *   @param return_code
+ *     return code of the parser
+ *     NOTE: ARG_SUCCESS [0] is returned on success
  *
  *   RETURN char * arg: 
  *     - NULL on a complete success.
@@ -106,11 +121,11 @@ typedef struct arg_argument arg_list[];
  *     a failure.
  *
  *   NOTES:
- *   1 this function is reentrant, meaning, that if an error occured, you
+ *   1 this function is re-entrant, meaning, that if an error occured, you
  *     can call this function again with the same set of variables and
  *     continue parsing.
  *   2 this function changes the addresses of the pointers, to save them
  *     as they were, consider writing them into another set of variables. */
-char * arg_parse (int * argc, char *** argv, arg_list list, char ** not_keys, size_t * not_keys_size, arg_return * return_code);
+char * arg_parse (int * argc, char *** argv, arg_list list, char ** not_keys, size_t * not_keys_size, arg_flags flags, arg_return * return_code);
 
 #endif

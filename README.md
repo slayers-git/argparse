@@ -53,7 +53,7 @@ int main (int argc, char ** argv) {
 	size_t buf_size;
 
 	/* parse the program's arguments */
-	if ((ptr = arg_parse (&argc, &argv, list, &nk_buffer, &buf_size, &code)) != NULL) {
+	if ((ptr = arg_parse (&argc, &argv, list, &nk_buffer, &buf_size, ARG_PARSE_DEFAULT, &code)) != NULL) {
 		printf ("An error occured here: %s", ptr);
 		return code;
 	}

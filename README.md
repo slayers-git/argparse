@@ -2,7 +2,19 @@
 
 argparse is a simple parser for the command line options, that implements the parser for the standart Unix-like options
 
+## Features
+
+- Merged key-value arguments (i.e objdump -Mintel ...)
+- Values without keys can be ignored, saved or return an error code (i.e gcc *argparse.c* -o argparse ...)
+- Merged short arguments (i.e emerge -uavD ...)
+- Long arguments (i.e emerge --ask --update --verbose ...)
+- Arguments with an optional value
+- No dynamic allocations and copying
+- Can be compiled without stdlib (-ffreestanding)
+
 ## Example
+
+Note: a more informative example can be found in example.c
 
 ```c
 /* <this_example> --verbose -cj --move "/some/where/" test_project */
@@ -75,3 +87,4 @@ int main (int argc, char ** argv) {
 ## Installation
 
 To install argparse on a unix system just type `make && sudo make install`
+You can also compile the example.c file with `make example` without installing the library on your system

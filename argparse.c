@@ -259,7 +259,7 @@ char * arg_parse (int * argc, char *** argv, arg_list list, char ** nk, size_t *
 				*argv = state.argv;
 				return arg;
 			}
-			++nk_size;
+			++(*nk_size);
 			*nk = *state.argv;
 			++nk;
 			continue;

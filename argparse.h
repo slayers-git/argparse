@@ -32,8 +32,6 @@
 
 #include <stddef.h>
 
-#define ARG_BUFSIZ 20
-
 #define ARG_SUCCESS 0
 
 #define ARG_ZERO   -1
@@ -61,6 +59,8 @@ p_arg_handler arg_string_handler;
  * to the static buffer */
 p_arg_handler arg_strcpy_handler;
 
+/* Defaults */
+#define ARG_FLAG_DEFAULT   0x0
 /* This flag tells the parser to set the flag argument value to 0 instead of 1 */
 #define ARG_FLAG_UNSET    0x01
 /* This flag tells the parser that the value for this argument is optional */

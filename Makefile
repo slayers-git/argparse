@@ -1,10 +1,10 @@
 CC=gcc
-EXEC=test
 LIB=argparse.a
 SHARED_LIB=libargparse.so
 SOURCE=argparse.c
 INCLUDE=argparse.h
-TEST_S=test.c
+EXAMPLE=example
+EXAMPLE_S=example.c
 CFLAGS=-fPIC -O2
 
 all: shared static
@@ -17,8 +17,11 @@ static: object
 shared: object
 	gcc -shared -o $(SHARED_LIB) $(SOURCE:.c=.o)
 
+example:
+	gcc -o $(EXAMPLE) $(EXAMPLE_S) $(SOURCE)
+
 clean:
-	rm -f $(SHARED_LIB) $(LIB) $(SOURCE:.c=.o)
+	rm -f $(SHARED_LIB) $(LIB) $(SOURCE:.c=.o) $(EXAMPLE)
 
 install:
 	cp $(INCLUDE) /usr/include

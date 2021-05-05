@@ -20,6 +20,12 @@
 #define ARG_LONG  0
 #define ARG_SHORT 1
 
+#if __STDC_VERSION__ >= 199903L
+#	define ARG_INLINE inline
+#else
+#	define ARG_INLINE 
+#endif
+
 /* A simple implementation of some important "string.h" functions */
 #ifdef ARG_STANDALONE
 #	define ARG_ASSERT(x)
@@ -28,7 +34,7 @@
 #	define ARG_MEMCPY(dest, src, n) arg_memcpy(dest, src, n)
 #	define ARG_STRCMP(a, b) arg_strcmp(a, b)
 
-static size_t arg_strlen (char * str) {
+static ARG_INLINE size_t arg_strlen (char * str) {
 	size_t len = 0;
 	while (*str) {
 		++str; ++len;
@@ -36,7 +42,7 @@ static size_t arg_strlen (char * str) {
 	return len;
 }
 
-static char * arg_strcpy (char * dest, char * src) {
+static ARG_INLINE char * arg_strcpy (char * dest, char * src) {
 	while (*src) {
 		*dest = *src;
 		++dest; ++src;
@@ -45,15 +51,15 @@ static char * arg_strcpy (char * dest, char * src) {
 	return dest;
 }
 
-static void * arg_memcpy (void * dest, void * src, size_t n) {
-	while (*dest) {
-		*(char)dest = *(char *)src;
+static ARG_INLINE void * arg_memcpy (void * dest, void * src, size_t n) {
+	while (*(char *)dest) {
+		*(char *)dest = *(char *)src;
 		++dest; ++src;
 	}
 	return dest;
 }
 
-static int arg_strcmp (char * f, char * s) {
+static ARG_INLINE int arg_strcmp (char * f, char * s) {
 	while (*f && *s) {
 		if (!(*f == *s)) {
 			break;	
@@ -75,23 +81,17 @@ static int arg_strcmp (char * f, char * s) {
 
 #define ARG_STREQ(a, b) (ARG_STRCMP(a, b) == 0)
 
-#if __STDC_VERSION__ >= 199903L
-#	define ARG_INLINE inline
-#else
-#	define ARG_INLINE 
-#endif
-
-arg_return arg_string_handler (void * data_ptr, size_t blksize, void * retval) {
-	void ** _retval = (void **)retval;
+arg_return arg_string_handler (char * data_ptr, size_t blksize, void * retval) {
+	register void ** _retval = (void **)retval;
 	*_retval = data_ptr;
 	return 0;
 }
-arg_return arg_strcpy_handler (void * data_ptr, size_t blksize, void * retval) {
+arg_return arg_strcpy_handler (char * data_ptr, size_t blksize, void * retval) {
 	if (blksize == 0) {
 		retval = NULL;
 		return 0;
 	}
-	ARG_STRCPY((char *)retval, (char *)data_ptr);
+	ARG_STRCPY((char *)retval, data_ptr);
 	return 0;
 }
 
@@ -108,7 +108,7 @@ struct arg_state {
 };
 
 static ARG_INLINE size_t arg_list_len (arg_list list) {
-	size_t r = 0;
+	register size_t r = 0;
 	while (*(struct arg_argument **)list != NULL) {
 		++r; ++list;
 	}
@@ -212,8 +212,8 @@ static ARG_INLINE arg_return arg_parse_short (struct arg_state * state) {
 }
 
 static ARG_INLINE arg_return arg_parse_long (struct arg_state * state) {
-	size_t i;
-	arg_return code;
+	register size_t i;
+	register arg_return code;
 	for (i = 0; i < state->len; ++i) {
 		if (ARG_STREQ (state->list[i].long_arg, *state->argv)) {
 			state->ptr = &state->list[i];

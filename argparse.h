@@ -45,7 +45,7 @@
 /* Type for the return codes */
 typedef signed char arg_return;
 
-typedef arg_return p_arg_handler (void * data_ptr, size_t blksize, void * retval);
+typedef arg_return p_arg_handler (char * data_ptr, size_t blksize, void * retval);
 
 /* The handler is the parser for the value of the argument
  * if NULL is passed instead of a valid handler function,

@@ -228,7 +228,6 @@ static ARG_INLINE arg_return arg_parse_long (struct arg_state * state) {
 }
 
 char * arg_parse (int * argc, char *** argv, arg_list list, char ** nk, size_t * nk_size, arg_flags flags, arg_return * code) {
-	ARG_ASSERT (*argc > 1);
 	ARG_ASSERT (argv != NULL);
 	ARG_ASSERT (list != NULL);
 
@@ -259,7 +258,7 @@ char * arg_parse (int * argc, char *** argv, arg_list list, char ** nk, size_t *
 				*argv = state.argv;
 				return arg;
 			}
-			++(*nk_size);
+			if (nk_size) ++(*nk_size);
 			*nk = *state.argv;
 			++nk;
 			continue;

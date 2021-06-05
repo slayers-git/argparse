@@ -86,5 +86,8 @@ int main (int argc, char ** argv) {
 
 ## Installation
 
-To install argparse on a unix system just type `make && sudo make install`
-You can also compile the example.c file with `make example` without installing the library on your system
+To build and install argparse on \*Unix systems, in your shell type
+```bash
+mkdir build && cd build\
+cmake .. && make && sudo make install
+```

@@ -91,3 +91,6 @@ To build and install argparse on \*Unix systems, in your shell type
 mkdir build && cd build\
 cmake .. && make && sudo make install
 ```
+
+To build examples to `cmake` command add `-DARGPARSE_EXAMPLES=1`; to include error messages via `arg_geterror ()` to `cmake` command add `-DARGPARSE_ERRORS=1`
+Note, that if the library is compiled without error messages, a call to `arg_geterror ()` will always return NULL.

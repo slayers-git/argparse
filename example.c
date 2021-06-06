@@ -36,7 +36,7 @@ static char op = undef;
  * 
  * handlers modify the value of the argument
  * to write it in retval the right way */
-arg_return custom_enum_handler (void * data, size_t size, void * retval) {
+arg_return custom_enum_handler (char * data, size_t size, void * retval) {
 	if (STREQ (data, "+")) {
 		op = plus;
 	}
@@ -114,7 +114,7 @@ int main (int argc, char ** argv) {
 			return 0;
 		}
 		/* if an error occured */
-		printf ("Could not parse argument: %s\n", err_arg);
+		printf ("Could not parse argument: %s [%s]\n", err_arg, arg_geterror (code));
 		return 1;
 	}
 

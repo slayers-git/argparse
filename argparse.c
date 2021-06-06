@@ -26,6 +26,20 @@
 #	define ARG_INLINE 
 #endif
 
+#ifdef ARGPARSE_ERRORS
+#	define _inc_aerr
+	/* a map with descriptions of all error codes */
+	const char * arg_err_map [] = {
+		[ARG_SUCCESS] = 0x0,
+
+		[ARG_HALT]   = "parsing was halted",
+		[ARG_INVAL]  = "invalid argument",
+		[ARG_UNEXP]  = "unexpected characters are met",
+		[ARG_NMATCH] = "not an argument",
+		[ARG_NVALUE] = "argument does not have a value"
+	};
+#endif
+
 /* A simple implementation of some important "string.h" functions */
 #ifdef ARG_STANDALONE
 #	define ARG_ASSERT(x)
@@ -291,4 +305,12 @@ char * arg_parse (int * argc, char *** argv, arg_list list, char ** nk, size_t *
 	}
 
 	return NULL;
+}
+
+const char * arg_geterror (arg_return code) {
+#ifdef _inc_aerr 
+	return arg_err_map [code];
+#else
+	return NULL;
+#endif
 }

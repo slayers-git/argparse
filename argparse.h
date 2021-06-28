@@ -96,13 +96,13 @@ typedef unsigned char arg_flags;
 /* struct arg_argument
  *   Contains a basic description of the argument list
  *   char short_arg: a short variant of the argument's key (i.e: -r)
- *   char * long_arg: a long variant of the argument's key (i.e: --recursive)
+ *   const char * long_arg: a long variant of the argument's key (i.e: --recursive)
  *   arg_handler handler: a handler for the value to be parsed
  *   void * retval: the variable, which accepts the parsed value 
  *   arg_flags flags: flags, which define the argument's parsing behavior */
 struct arg_argument {
 	char short_arg;
-	char * long_arg;
+	const char * long_arg;
 	arg_handler handler;
 	void * retval;
 	arg_flags flags;

@@ -1,3 +1,7 @@
+# This file is part of the argparse library.
+# Copyright (C) 2021 by Sergey Lafin
+# Licensed under the LGPL v2.1, see the file LICENSE in base directory.
+
 cmake_minimum_required (VERSION 3.12)
 project (argparse)
 

@@ -19,7 +19,7 @@
 #	define _inc_aerr
 	/* a map with descriptions of all error codes */
 	const char * arg_err_map [] = {
-		[ARG_SUCCESS] = 0x0,
+		[ARG_SUCCESS] = "",
 
 		[ARG_HALT]   = "parsing was halted",
 		[ARG_INVAL]  = "invalid argument",
@@ -47,8 +47,7 @@ static ARG_INLINE size_t arg_strlen (char * str) {
 
 static ARG_INLINE char * arg_strcpy (char * dest, char * src) {
 	while (*src) {
-		*dest = *src;
-		++dest; ++src;
+		*dest++ = *src++;
 	}
 	dest = 0x0;
 	return dest;
@@ -56,18 +55,16 @@ static ARG_INLINE char * arg_strcpy (char * dest, char * src) {
 
 static ARG_INLINE void * arg_memcpy (void * dest, void * src, size_t n) {
 	while (*(char *)dest) {
-		*(char *)dest = *(char *)src;
-		++dest; ++src;
+		*(char *)dest++ = *(char *)src++;
 	}
 	return dest;
 }
 
 static ARG_INLINE int arg_strcmp (char * f, char * s) {
 	while (*f && *s) {
-		if (!(*f == *s)) {
+		if (!(*f++ == *s++)) {
 			break;	
 		}
-		++f; ++s;
 	}
 	return *(unsigned char *)f - *(unsigned char *)s;
 }
@@ -85,7 +82,7 @@ static ARG_INLINE int arg_strcmp (char * f, char * s) {
 #define ARG_STREQ(a, b) (ARG_STRCMP(a, b) == 0)
 
 arg_return arg_string_handler (char * data_ptr, size_t blksize, void * retval) {
-	register void ** _retval = (void **)retval;
+	void ** _retval = (void **)retval;
 	*_retval = data_ptr;
 	return 0;
 }
@@ -111,7 +108,7 @@ struct arg_state {
 };
 
 static ARG_INLINE size_t arg_list_len (arg_list list) {
-	register size_t r = 0;
+	size_t r = 0;
 	while (*(struct arg_argument **)list != NULL) {
 		++r; ++list;
 	}
@@ -215,8 +212,8 @@ static ARG_INLINE arg_return arg_parse_short (struct arg_state * state) {
 }
 
 static ARG_INLINE arg_return arg_parse_long (struct arg_state * state) {
-	register size_t i;
-	register arg_return code;
+	size_t i;
+	arg_return code;
 	for (i = 0; i < state->len; ++i) {
 		if (ARG_STREQ (state->list[i].long_arg, *state->argv)) {
 			state->ptr = &state->list[i];

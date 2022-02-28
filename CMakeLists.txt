@@ -6,7 +6,7 @@ cmake_minimum_required (VERSION 3.12)
 project (argparse)
 
 set (CMAKE_C_FLAGS "-O3")
-option (ARGPARSE_ERRORS "builtin error description via arg_geterror ()" OFF)
+option (ARGPARSE_ERRORS "builtin error description via arg_geterror ()" ON)
 option (ARGPARSE_EXAMPLES "build examples" OFF)
 
 set (argparse_h

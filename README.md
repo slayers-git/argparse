@@ -61,8 +61,8 @@ int main (int argc, char ** argv) {
 
 	/* buffer for the elements, that are not keys */
 	char * nk_buffer = NULL;
-	/* size of the nk_buffer */
-	size_t buf_size;
+	/* size of the nk_buffer (will be overwritten with the amount of arguments that are not keys) */
+	size_t buf_size  = 1;
 
 	/* parse the program's arguments */
 	if ((ptr = arg_parse (&argc, &argv, list, &nk_buffer, &buf_size, ARG_PARSE_DEFAULT, &code)) != NULL) {

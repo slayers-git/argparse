@@ -1,6 +1,6 @@
 /* This file is part of the argparse library.
  *
- * Copyright (C) 2021 by Sergey Lafin
+ * Copyright (C) 2021-2022 by Sergey Lafin
  *
  * Licensed under the LGPL v2.1, see the file LICENSE in base directory. */
 
@@ -31,13 +31,13 @@
 
 /* A simple implementation of some important "string.h" functions */
 #ifdef ARG_STANDALONE
-#	define ARG_ASSERT(x)
+#   define ARG_ASSRT(str) /* Pretty much impossible to implement in standalone */
 #	define ARG_STRLEN(str) arg_strlen(str)
 #	define ARG_STRCPY(dest, src) arg_strcpy(dest, src)
 #	define ARG_MEMCPY(dest, src, n) arg_memcpy(dest, src, n)
 #	define ARG_STRCMP(a, b) arg_strcmp(a, b)
 
-static ARG_INLINE size_t arg_strlen (char * str) {
+static ARG_INLINE size_t arg_strlen (const char * str) {
 	size_t len = 0;
 	while (*str) {
 		++str; ++len;
@@ -45,7 +45,7 @@ static ARG_INLINE size_t arg_strlen (char * str) {
 	return len;
 }
 
-static ARG_INLINE char * arg_strcpy (char * dest, char * src) {
+static ARG_INLINE char * arg_strcpy (char * dest, const char * src) {
 	while (*src) {
 		*dest++ = *src++;
 	}
@@ -53,14 +53,14 @@ static ARG_INLINE char * arg_strcpy (char * dest, char * src) {
 	return dest;
 }
 
-static ARG_INLINE void * arg_memcpy (void * dest, void * src, size_t n) {
+static ARG_INLINE void * arg_memcpy (void * dest, const void * src, size_t n) {
 	while (*(char *)dest) {
 		*(char *)dest++ = *(char *)src++;
 	}
 	return dest;
 }
 
-static ARG_INLINE int arg_strcmp (char * f, char * s) {
+static ARG_INLINE int arg_strcmp (const char * f, const char * s) {
 	while (*f && *s) {
 		if (!(*f++ == *s++)) {
 			break;	
@@ -71,18 +71,28 @@ static ARG_INLINE int arg_strcmp (char * f, char * s) {
 
 #else
 #	include <string.h>
-#	include <assert.h>
-#	define ARG_ASSERT(x) assert(x)
 #	define ARG_STRLEN(str) strlen(str)
 #	define ARG_STRCPY(dest, src) strcpy(dest, src)
 #	define ARG_MEMCPY(dest, src, n) memcpy(dest, src, n)
 #	define ARG_STRCMP(a, b) strcmp(a, b)
+
+/* Uses my own simplified assert */
+
+#   include <stdio.h>
+#   include <stdlib.h>
+#   define ARG_ASSERT(x) { if (!(x)) arg_assert (#x); }
+static ARG_INLINE void arg_assert (const char *expr) {
+    fprintf (stderr, "argparse: assertion failed: %s\n", expr);
+    abort ();
+}
+
 #endif
 
 #define ARG_STREQ(a, b) (ARG_STRCMP(a, b) == 0)
+#define RETPTR(p) ((void **)p)
 
 arg_return arg_string_handler (char * data_ptr, size_t blksize, void * retval) {
-	void ** _retval = (void **)retval;
+	void ** _retval = RETPTR (retval);
 	*_retval = data_ptr;
 	return 0;
 }
@@ -227,15 +237,23 @@ static ARG_INLINE arg_return arg_parse_long (struct arg_state * state) {
 	return ARG_NMATCH;
 }
 
-char * arg_parse (int * argc, char *** argv, arg_list list, char ** nk, size_t * nk_size, arg_flags flags, arg_return * code) {
+char *arg_parse (int *argc, char ***argv, arg_list list, char **nk_buf, size_t *nk_size, arg_flags flags, arg_return *code) {
 	ARG_ASSERT (argv != NULL);
 	ARG_ASSERT (list != NULL);
 
 	size_t len = arg_list_len (list);
 	ARG_ASSERT (len > 0);
 
-	if (nk_size)
-		*nk_size = 0;
+    /* if nk_buf is specified, so should be the nk_size */
+    if (nk_buf)
+        ARG_ASSERT (nk_buf != NULL && nk_size != NULL);
+
+    size_t nk_lim = nk_buf ? *nk_size : 0;
+    if (nk_buf)
+        *nk_size = 0;
+
+    ++(*argv);
+
 
 	struct arg_state state;
 	state.argc   =    argc;
@@ -247,50 +265,53 @@ char * arg_parse (int * argc, char *** argv, arg_list list, char ** nk, size_t *
 
 	char accept_args = 1;
 
-	arg_return _code;
-	while (--(*state.argc)) {
-		++state.argv;
-		char * arg = *state.argv;
-		/* Not a key */
-		if ((*arg) != '-' || !accept_args) {
-			if (!nk) {
-				*code = ARG_UNEXP;
-				*argv = state.argv;
-				return arg;
-			}
-			if (nk_size) ++(*nk_size);
-			*nk = *state.argv;
-			++nk;
-			continue;
-		}
+    arg_return retcode;
+#define arg (*state.argv)
+    for ((*state.argc)--; *state.argc; ++state.argv, --(*state.argc)) {
+        if (*arg != '-' || !accept_args) {
+            /* if nkbuf is null, we considered the argument malformed */
+            if (!nk_buf) {
+                *code = ARG_UNEXP;
+                *argv = state.argv;
 
-		/* long */
-		if (*(arg + 1) == '-') {
-			*state.argv += 2;
-			if (!(**state.argv)) {
-				accept_args = 0;
-				continue;
-			}
-			state.type = ARG_LONG;
-			if ((_code = arg_parse_long (&state)) != ARG_SUCCESS) {
-				*code = _code;
-				*argv = state.argv;
-				return arg;
-			}
-			continue;
-		}
+                return arg;
+            }
 
-		/* short */
-		++(*state.argv);
-		state.type = ARG_SHORT;
-		if ((_code = arg_parse_short (&state)) != ARG_SUCCESS) {
-			*code = _code;
-			*argv = state.argv;
-			return arg;
-		}
-	}
+            if ((*nk_size)++ < nk_lim) {
+                *nk_buf++ = arg;
+            }
+            continue;
+        }
 
-	return NULL;
+        if (*arg == '-') {
+            ++arg;
+            if (*arg == '-') {
+                ++arg;
+                /* just "--" */
+                if (!(*arg)) {
+                    accept_args = 0;
+                } else {
+                    state.type = ARG_LONG;
+                    if ((*code = arg_parse_long (&state)) != ARG_SUCCESS) {
+                        *argv = state.argv;
+                        return arg - 2;
+                    }
+                }
+
+                continue;
+            }
+            else {
+                state.type = ARG_SHORT;
+                if ((*code = arg_parse_short (&state)) != ARG_SUCCESS) {
+                    *argv = state.argv;
+
+                    return arg - 1;
+                }
+            }
+        }
+    }
+
+    return NULL;
 }
 
 const char * arg_geterror (arg_return code) {

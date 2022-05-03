@@ -1,11 +1,18 @@
 # This file is part of the argparse library.
-# Copyright (C) 2021 by Sergey Lafin
+# Copyright (C) 2021-2022 by Sergey Lafin
 # Licensed under the LGPL v2.1, see the file LICENSE in base directory.
 
 cmake_minimum_required (VERSION 3.12)
 project (argparse)
 
-set (CMAKE_C_FLAGS "-O3")
+if (UNIX)
+    set (CMAKE_C_FLAGS_RELEASE "-O2")
+    set (CMAKE_C_FLAGS_DEBUG   "-g -O0")
+elseif (MSVC)
+    set (CMAKE_C_FLAGS_RELEASE "/O2")
+    set (CMAKE_C_FLAGS_DEBUG   "/g /O0")
+endif ()
+
 option (ARGPARSE_ERRORS "builtin error description via arg_geterror ()" ON)
 option (ARGPARSE_EXAMPLES "build examples" OFF)
 

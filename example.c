@@ -92,8 +92,9 @@ int main (int argc, char ** argv) {
 
 	/* the buffer for the *not-a-key* value (value, not preceeded by a key) */
 	char * nk_buf[2];
-	/* size of the written buffer */
-	size_t nk_siz;
+	/* size of the written buffer (Should be initialized, as this variable defines the 
+     * size of the existing buffer (which is of size 2 in this example)) */
+	size_t nk_siz = 2;
 
 	/* call the parser
 	 * if an error occured, the parser will stop and return the faulty argument and will write the error
@@ -104,7 +105,8 @@ int main (int argc, char ** argv) {
 	 * &argv is a pointer to the argv variable
 	 * list is the argument list
 	 * nk_buf is the buffer for storing *not-a-key* values
-	 * &nk_siz is the variable, that is going to store the size of the nk_buf
+	 * &nk_siz is the variable, that contains the size of the buffer, and then is going to store the amount of 
+     *  entries of the nk_buf array that were actually filled after parsing.
 	 * ARG_PARSE_MERGED is a flag, that tells the parser, that we allow merged key-value arguments (i.e -o+)
 	 * &code is a variable that is going to store the return code of the parser */
 	if ((err_arg = arg_parse (&argc, &argv, list, nk_buf, &nk_siz, ARG_PARSE_MERGED, &code)) != NULL) {

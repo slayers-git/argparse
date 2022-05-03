@@ -1,5 +1,5 @@
 /* argparse - fast argument parsing library
- * Copyright (C) 2021 Sergey Lafin
+ * Copyright (C) 2021-2022 Sergey Lafin
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -122,7 +122,11 @@ typedef struct arg_argument arg_list[];
  *   @param not_keys
  *     a buffer for random values
  *   @param not_keys_size
- *     size of the not_keys buffer
+ *     size of the not_keys buffer.
+ *     This variable should be initialized to represent the size of the 
+ *     not_keys array. It will be overwritten after the invocation to 
+ *     the amount of entries read to the not_keys array.  (See par. 3
+ *     in NOTES)
  *   @param flags
  *     flags, defining the behaviour of the parser
  *   @param return_code
@@ -139,7 +143,11 @@ typedef struct arg_argument arg_list[];
  *     can call this function again with the same set of variables and
  *     continue parsing.
  *   2 this function changes the addresses of the pointers, to save them
- *     as they were, consider writing them into another set of variables. */
+ *     as they were, consider writing them into another set of variables. 
+ *   3 this function READS the not_keys_size variable (unless not_keys is
+ *     not NULL in which case not_keys_size won't be read from and can be 
+ *     left as NULL), so the variable should be initialized with a value,
+ *     that represents the size of the not_keys array */
 ARGPARSE_API char * arg_parse (int * argc, char *** argv, arg_list list, char ** not_keys, size_t * not_keys_size, arg_flags flags, arg_return * return_code);
 
 /* const char * arg_geterror:
